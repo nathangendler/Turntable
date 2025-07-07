@@ -9,14 +9,15 @@ interface UserAlbumsProps {
 }
 
 export default function UserAlbums({ username, userRatings, self }: UserAlbumsProps){
-
     return(
         <div className="mt-8 text-white">
             {self && <h2 className="text-xl font-bold mb-4 text-center">Your Albums</h2>}
             {!userRatings || userRatings.length === 0 ? (
                 self ? (
                     <p className="text-gray-300 text-center">No albums rated yet. Start exploring music!</p>
-                ) : null
+                ) : (
+                    <p className="text-gray-300 text-center">No albums rated yet.</p>
+                )
             ) : (
             <ul className="space-y-2">
                 {userRatings.map((album, idx) => (

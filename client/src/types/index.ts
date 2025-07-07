@@ -30,6 +30,7 @@ export interface Album {
 }
 
 export interface SearchInfo {
+    id: number,
     username: string,
     followers: number[],
     following: number[],
@@ -45,4 +46,26 @@ export interface AlbumRating {
     record_type: string,
     record_image: string,
     rating: number
+}
+
+interface FeedPost {
+  id: number;
+  user_id: number;
+  username: string;
+  album_id: number;
+  album_name: string;
+  artist_name: string;
+  release_year: number;
+  record_type: string;
+  record_image: string;
+  rating: number;
+  created_at: string;
+  is_following: boolean;
+}
+
+interface FeedResponse {
+  posts: FeedPost[];
+  hasMore: boolean;
+  page: number;
+  totalPosts: number;
 }

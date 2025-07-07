@@ -5,6 +5,8 @@ import SearchAlbum from './components/SearchAlbum';
 import RegisterPage from './components/RegisterPage';
 import LoginPage from './components/LoginPage';
 import SearchUser from './components/SearchUser';
+import Follows from './components/Follows';
+import HomePage from './components/HomePage';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import {User} from './types/index';
@@ -61,6 +63,26 @@ function App() {
               ? <SearchUser user={user} />
               : <Navigate to="/login" />
           } 
+        />
+        <Route
+          path="/follows"
+          element={
+            loggedIn === null
+              ? null
+              : loggedIn
+              ? <Follows user={user} />
+              : <Navigate to="/login" />
+          } 
+        />
+        <Route
+          path="/feed"
+          element={
+            loggedIn === null
+              ? null
+              : loggedIn
+              ? <HomePage user={user} />
+              : <Navigate to="/login" />
+          }
         />
       </Routes>
     </Router>

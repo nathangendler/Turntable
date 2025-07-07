@@ -9,7 +9,7 @@ function Profile(){
     }
     return(
         <div>
-            <button className="text-white font-bold text-lg hover:text-gray-300 transition-colors"
+            <button className="text-white font-bold text-lg hover:text-gray-500 transition-colors"
                     onClick={handleClick}>
                 Profile
             </button>
