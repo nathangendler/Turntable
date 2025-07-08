@@ -56,6 +56,10 @@ export default function LoginPage({ setLoggedIn, setUser }: LoginPageProps) {
     }
   };
 
+  const handleRegisterRoute = (): void => {
+    navigate('/register');
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-900">
       <div className="flex flex-col space-y-4 bg-gray-800 p-8 rounded-lg shadow-lg">
@@ -88,6 +92,12 @@ export default function LoginPage({ setLoggedIn, setUser }: LoginPageProps) {
           }`}
         >
           {loading ? 'Logging in...' : 'Login'}
+        </button>
+        <button
+          onClick={handleRegisterRoute}
+          className="bg-white text-black px-4 py-2 rounded hover:bg-gray-200 transition"
+        >
+          Don't have an account? Register
         </button>
       </div>
     </div>

@@ -33,8 +33,9 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<RegisterPage />} />
+        <Route path="/" element={<LoginPage setLoggedIn={setLoggedIn} setUser={setUser} />} />
         <Route path="/login" element={<LoginPage setLoggedIn={setLoggedIn} setUser={setUser} />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route
           path="/home"
           element={
