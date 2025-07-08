@@ -3,10 +3,11 @@ FROM node:18-alpine
 # Install Python and pip
 RUN apk add --no-cache python3 py3-pip
 
-# Install Chromium and ChromeDriver for Selenium
+# Install Chromium and ChromeDriver for Selenium, plus curl for health checks
 RUN apk add --no-cache \
     chromium \
-    chromium-chromedriver
+    chromium-chromedriver \
+    curl
 
 # Install Python dependencies for Selenium
 RUN pip3 install selenium

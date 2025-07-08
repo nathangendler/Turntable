@@ -115,6 +115,24 @@ const db: Connection = mysql.createConnection({
   database: process.env.DB_NAME || "turntable"
 });
 
+app.get('/health', (req: Request, res: Response): void => {
+  db.ping((err) => {
+    if (err) {
+      res.status(503).json({ 
+        status: 'unhealthy', 
+        error: 'Database connection failed',
+        timestamp: new Date().toISOString()
+      });
+      return;
+    }
+    res.status(200).json({ 
+      status: 'healthy', 
+      timestamp: new Date().toISOString(),
+      database: 'connected'
+    });
+  });
+});
+
 app.post('/api/register', (req, res): void => {
   const { username, password }: { username: string; password: string } = req.body;
 

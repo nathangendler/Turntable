@@ -5,6 +5,8 @@ yarn-error.log*
 .git
 .gitignore
 README.md
+.env
+.env.*
 .env.local
 .env.development.local
 .env.test.local
@@ -16,3 +18,5 @@ coverage
 Thumbs.db
 dist
 build
+docker-compose.yml
+*.md
