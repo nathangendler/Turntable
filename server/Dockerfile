@@ -10,7 +10,7 @@ RUN apk add --no-cache \
     curl
 
 # Install Python dependencies for Selenium
-RUN pip3 install selenium
+RUN pip3 install --break-system-packages selenium
 
 WORKDIR /app
 
