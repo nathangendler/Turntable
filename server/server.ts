@@ -7,10 +7,13 @@ import bcrypt from 'bcrypt';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
+import dotenv from 'dotenv';
 
+dotenv.config();
 const app = express();
-const PORT = 3001;
-const saltRounds = 10;
+const PORT = parseInt(process.env.PORT || '3001');
+
+const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '10');
 
 declare module 'express-session' {
   interface SessionData {
@@ -83,7 +86,7 @@ interface FeedPost extends RowDataPacket {
 }
 
 app.use(cors({
-  origin: ["http://localhost:5173"],
+  origin: process.env.CORS_ORIGINS?.split(',') || ["http://localhost:5173"],
   methods: ["GET", "POST"],
   credentials: true
 }));
@@ -94,7 +97,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(
   session({
     name: "userID",
-    secret: "secret",
+    secret: process.env.SESSION_SECRET || "development-only-change",
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -106,10 +109,10 @@ app.use(
 app.use(express.json());
 
 const db: Connection = mysql.createConnection({
-  user: "root",
-  host: "localhost",
-  password: "Harvestmoon19$",
-  database: "turntable"
+  user: process.env.DB_USER || "root",
+  host: process.env.DB_HOST || "localhost",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "turntable"
 });
 
 app.post('/api/register', (req, res): void => {

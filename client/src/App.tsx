@@ -16,7 +16,8 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    axios.get('http://localhost:3001/api/loginStatus', { withCredentials: true })
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+    axios.get(`${apiUrl}/loginStatus`, { withCredentials: true })
       .then(res => {
         setLoggedIn(res.data.loggedIn);
         if (res.data.loggedIn) {

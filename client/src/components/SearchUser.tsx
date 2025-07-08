@@ -26,7 +26,8 @@ export default function SearchUser({ user }: SearchUserProps) {
         if (!query) return;
         setLoading(true);
         setError(null);
-        fetch('http://localhost:3001/api/searchUser', {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        fetch(`${apiUrl}/searchUser`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query }),
@@ -56,8 +57,9 @@ export default function SearchUser({ user }: SearchUserProps) {
         if (!searchInfo || !user) return;
 
         try {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
             const endpoint = isFollowing ? 'unfollowUser' : 'followUser';
-            const response = await fetch(`http://localhost:3001/api/${endpoint}`, {
+            const response = await fetch(`${apiUrl}/${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 

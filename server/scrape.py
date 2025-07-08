@@ -1,7 +1,8 @@
 import json
 import re
 import sys
-import io  # ✅ Added for stdout fix
+import io
+import os
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -33,14 +34,33 @@ def scrape_album_data(url, silent_mode=False):
     chrome_options.add_argument('--disable-renderer-backgrounding')
     chrome_options.add_argument('--disable-features=TranslateUI')
     chrome_options.add_argument('--disable-ipc-flooding-protection')
+    chrome_options.add_argument('--remote-debugging-port=9222')
     chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+    
+    # Docker compatibility: Use Chromium if available (Alpine Linux)
+    if os.path.exists('/usr/bin/chromium-browser'):
+        chrome_options.binary_location = '/usr/bin/chromium-browser'
+        if not silent_mode:
+            print("Using Chromium browser (Docker environment detected)")
 
     try:
-        driver = webdriver.Chrome(options=chrome_options)
+        # Try Docker chromedriver path first
+        if os.path.exists('/usr/bin/chromedriver'):
+            service = Service('/usr/bin/chromedriver')
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+            if not silent_mode:
+                print("Using ChromeDriver from /usr/bin/chromedriver (Docker)")
+        else:
+            # Try default Chrome setup
+            driver = webdriver.Chrome(options=chrome_options)
+            if not silent_mode:
+                print("Using default ChromeDriver")
+                
     except Exception as e:
         if not silent_mode:
             print(f"Error initializing Chrome driver: {e}")
-        import os
+        
+        # Fallback to local paths (for development)
         possible_paths = [
             'chromedriver.exe',
             './chromedriver.exe',
@@ -63,7 +83,7 @@ def scrape_album_data(url, silent_mode=False):
                     continue
         
         if driver is None:
-            raise Exception("ChromeDriver not found. Please install ChromeDriver and add it to your PATH.")
+            raise Exception("ChromeDriver not found. Please install ChromeDriver and add it to your PATH, or ensure Docker environment is properly configured.")
     
     try:
         if not silent_mode:

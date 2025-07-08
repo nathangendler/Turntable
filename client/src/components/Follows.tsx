@@ -1,5 +1,5 @@
 const processImageUrl = (imageUrl?: string) => {
-    if (!imageUrl) return '/default-profile-pic.jpg'; // fallback image
+    if (!imageUrl) return '/default-profile-pic.jpg';
     return `https://images.weserv.nl/?url=${encodeURIComponent(imageUrl)}&w=800&h=800`;
   };import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -42,9 +42,8 @@ export default function Follows({ user }: FollowsProps) {
 
     const fetchUserProfiles = async () => {
       try {
-        console.log('Fetching', listType, 'for username:', username);
-        
-        const response = await fetch('http://localhost:3001/api/getFollowProfiles', {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        const response = await fetch(`${apiUrl}/getFollowProfiles`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 

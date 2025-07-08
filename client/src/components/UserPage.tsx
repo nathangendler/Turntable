@@ -24,7 +24,8 @@ export default function UserPage({ user }: UserPageProps) {
     useEffect(() => {
         if (!username) return;
         const query = username;
-        fetch('http://localhost:3001/api/searchUser', {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        fetch(`${apiUrl}/searchUser`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

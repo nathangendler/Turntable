@@ -1,11 +1,11 @@
 import React from 'react';
 import '../index.css';
-import { Album } from '../types'; // Import shared Album type
+import { Album } from '../types'; 
 
 interface AlbumCardProps {
-  idx: number; // Fixed typo: was "inx", changed to "idx" and removed null
+  idx: number; 
   album: Album;
-  handleClick: () => void; // Added proper function type
+  handleClick: () => void; 
 }
 
 export default function AlbumCard({ idx, album, handleClick }: AlbumCardProps) {

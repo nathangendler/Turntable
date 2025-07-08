@@ -30,7 +30,8 @@ export default function SearchAlbum({ user }: SearchAlbumProps) {
       if (!user?.username || !selectedAlbum) return;
 
       const roundedRating = Math.round(Number(rating) * 10) / 10;
-      const response = await fetch('http://localhost:3001/api/log', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const response = await fetch(`${apiUrl}/log`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -63,8 +64,8 @@ export default function SearchAlbum({ user }: SearchAlbumProps) {
 
     setLoading(true);
     setError(null);
-
-    fetch('http://localhost:3001/api/searchAlbum', {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+    fetch(`${apiUrl}/searchAlbum`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
