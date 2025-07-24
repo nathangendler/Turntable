@@ -43,21 +43,25 @@ const PostCard = ({ post }: { post: FeedPost }) => {
     }
   };
 
+  const hasValidImage = post.record_image && post.record_image.trim() !== '';
+
   return (
     <div className="bg-gray-800 rounded-lg p-4 mb-4">
       <div className="flex items-start space-x-4">
-        <img 
-          src={processImageUrl(post.record_image)} 
-          alt={`${post.album_name} cover`}
-          className="w-16 h-16 rounded object-cover"
-          onError={(e) => {
-            e.currentTarget.src = '/default-album-cover.jpg';
-          }}
-        />
+        {hasValidImage && (
+          <img 
+            src={processImageUrl(post.record_image)} 
+            alt={`${post.album_name} cover`}
+            className="w-16 h-16 rounded object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        )}
         <div className="flex-1">
           <div className="flex items-center space-x-2 mb-2">
             <span className="text-white font-semibold">{post.username}</span>
-            {post.is_following && (
+            {Boolean(post.is_following) && (
               <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded">
                 Following
               </span>

@@ -7,6 +7,7 @@ import { useLocation } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 import { User, UserRating, FollowData, FollowState } from '../types'; 
 import { SearchInfo, AlbumRating } from '../types/index';
+import blank from '../assets/blankUserPic.webp';
 
 interface UserPageProps {
   user: User | null;
@@ -58,7 +59,7 @@ export default function UserPage({ user }: UserPageProps) {
                 albumsRated={userInformation?.ratings_count || 0}
                 followers={userInformation?.followers?.length || 0} 
                 following={userInformation?.following?.length || 0}
-                pfp={bochi}
+                pfp={blank}
             />
             <UserAlbums username={user?.username} userRatings={userInformation?.albums || []} self={true}/>
         </div>

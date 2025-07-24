@@ -114,7 +114,7 @@ export default function SearchAlbum({ user }: SearchAlbumProps) {
           <div>
             <p className="w-fit mx-auto mb-4">Found {results.length} albums:</p>
             <div className="grid grid-cols-4 gap-4 p-4">
-              {results.slice(0, 8).map((album, idx) => (
+              {results.slice(0, results.length - 1).map((album, idx) => (
                 <AlbumCard
                   key={idx}
                   idx={idx}

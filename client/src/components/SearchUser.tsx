@@ -8,6 +8,8 @@ import { User, Album } from '../types';
 import bochi from '../assets/bochiPorter.webp';
 import { SearchInfo, AlbumRating } from '../types/index';
 import { Button } from "@/components/ui/button";
+import snoopy from '../assets/snoopy_lamp.jpg'
+import blank from '../assets/blankUserPic.webp'
 
 interface SearchUserProps {
   user: User | null;
@@ -128,7 +130,7 @@ export default function SearchUser({ user }: SearchUserProps) {
                     albumsRated={searchInfo.ratings_count || 0}
                     followers={searchInfo.followers?.length || 0} 
                     following={searchInfo.following?.length || 0}
-                    pfp={bochi}
+                    pfp={blank}
                 />
                 {user && searchInfo.id !== user.id && (
                     <div className="pt-24">

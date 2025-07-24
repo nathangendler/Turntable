@@ -1,37 +1,40 @@
 import React from 'react';
-import '../index.css';
-import { Album } from '../types'; 
+import { Album } from '../types';
 
 interface AlbumCardProps {
-  idx: number; 
+  idx: number;
   album: Album;
-  handleClick: () => void; 
+  handleClick: () => void;
 }
 
-export default function AlbumCard({ idx, album, handleClick }: AlbumCardProps) {
+const AlbumCard = ({ album, handleClick }: AlbumCardProps) => {
+  const hasValidImage = album.image_url && album.image_url.trim() !== '';
+
   return (
-    <button
+    <div
+      className="bg-gray-800 rounded-lg p-4 mb-4 cursor-pointer hover:bg-gray-700 transition-colors"
       onClick={handleClick}
-      className="w-full aspect-[2/3] border border-gray-300 rounded-lg overflow-hidden flex flex-col hover:border-gray-400 transition-colors"
     >
-      {album.image_url && (
-        <img
-          src={`https://images.weserv.nl/?url=${encodeURIComponent(album.image_url)}&w=800&h=800`}
-          alt={`${album.album_name} cover`}
-          className="w-full h-1/2 object-cover"
-          onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-            console.error('Image failed to load:', album.image_url);
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-          }}
-        />
-      )}
-      <div className="flex flex-col justify-center text-sm text-center p-2 h-1/2">
-        <p><strong>Artist:</strong> {album.artist_name || 'Unknown'}</p>
-        <p><strong>Album:</strong> {album.album_name || 'Unknown'}</p>
-        <p><strong>Year:</strong> {album.release_date || 'Unknown'}</p>
-        <p><strong>Type:</strong> {album.record_type || 'Unknown'}</p>
+      <div className="flex items-start space-x-4">
+        {hasValidImage && (
+          <img
+            src={`https://images.weserv.nl/?url=${album.image_url}&w=800&h=800`}
+            alt={`${album.album_name} cover`}
+            className="w-16 h-16 rounded object-cover"
+            onError={(e) => {
+              // Hide the image if it fails to load
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        )}
+        <div className="flex-1">
+          <h3 className="text-white font-bold text-lg">{album.album_name}</h3>
+          <p className="text-gray-300">by {album.artist_name}</p>
+          <p className="text-gray-400 text-sm">{album.release_date} • {album.record_type}</p>
+        </div>
       </div>
-    </button>
+    </div>
   );
-}
+};
+
+export default AlbumCard;

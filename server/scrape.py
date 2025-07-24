@@ -3,6 +3,8 @@ import re
 import sys
 import io
 import os
+import random
+import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -14,35 +16,62 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 def scrape_album_data(url, silent_mode=False):
-   
     chrome_options = Options()
-    chrome_options.add_argument('--headless')  
+    
+    # Basic headless options
+    chrome_options.add_argument('--headless')
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-dev-shm-usage')
-    chrome_options.add_argument('--disable-gpu')  
+    
+    # Aggressive GPU disabling
+    chrome_options.add_argument('--disable-gpu')
+    chrome_options.add_argument('--disable-gpu-sandbox')
+    chrome_options.add_argument('--disable-software-rasterizer')
+    chrome_options.add_argument('--disable-3d-apis')
+    chrome_options.add_argument('--disable-accelerated-2d-canvas')
+    chrome_options.add_argument('--disable-accelerated-jpeg-decoding')
+    chrome_options.add_argument('--disable-accelerated-mjpeg-decode')
+    chrome_options.add_argument('--disable-accelerated-video-decode')
+    chrome_options.add_argument('--disable-gl-drawing-for-tests')
+    chrome_options.add_argument('--disable-accelerated-video-encode')
+    
+    # Additional stability options
     chrome_options.add_argument('--disable-extensions')
     chrome_options.add_argument('--disable-plugins')
-    chrome_options.add_argument('--disable-images')  
-    chrome_options.add_argument('--ignore-certificate-errors')  
-    chrome_options.add_argument('--ignore-ssl-errors')
-    chrome_options.add_argument('--ignore-certificate-errors-spki-list')
+    chrome_options.add_argument('--disable-images')
+    chrome_options.add_argument('--disable-javascript')  # Only if the site works without JS
     chrome_options.add_argument('--disable-web-security')
-    chrome_options.add_argument('--allow-running-insecure-content')
-    chrome_options.add_argument('--disable-software-rasterizer')
+    chrome_options.add_argument('--disable-features=TranslateUI,VizDisplayCompositor')
     chrome_options.add_argument('--disable-background-timer-throttling')
     chrome_options.add_argument('--disable-backgrounding-occluded-windows')
     chrome_options.add_argument('--disable-renderer-backgrounding')
-    chrome_options.add_argument('--disable-features=TranslateUI')
     chrome_options.add_argument('--disable-ipc-flooding-protection')
-    chrome_options.add_argument('--remote-debugging-port=9222')
+    
+    # Certificate handling
+    chrome_options.add_argument('--ignore-certificate-errors')
+    chrome_options.add_argument('--ignore-ssl-errors')
+    chrome_options.add_argument('--ignore-certificate-errors-spki-list')
+    chrome_options.add_argument('--allow-running-insecure-content')
+    
+    # Use random port for debugging to avoid conflicts
+    debug_port = random.randint(9223, 9999)
+    chrome_options.add_argument(f'--remote-debugging-port={debug_port}')
+    
+    # User agent
     chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
     
-    # Docker compatibility: Use Chromium if available (Alpine Linux)
+    # Memory and performance
+    chrome_options.add_argument('--memory-pressure-off')
+    chrome_options.add_argument('--max_old_space_size=4096')
+    
+    # Docker compatibility
     if os.path.exists('/usr/bin/chromium-browser'):
         chrome_options.binary_location = '/usr/bin/chromium-browser'
         if not silent_mode:
             print("Using Chromium browser (Docker environment detected)")
 
+    driver = None
+    
     try:
         # Try Docker chromedriver path first
         if os.path.exists('/usr/bin/chromedriver'):
@@ -70,7 +99,6 @@ def scrape_album_data(url, silent_mode=False):
             'C:/chromedriver/chromedriver.exe'
         ]
         
-        driver = None
         for path in possible_paths:
             if os.path.exists(path):
                 try:
@@ -79,38 +107,75 @@ def scrape_album_data(url, silent_mode=False):
                     if not silent_mode:
                         print(f"Using ChromeDriver from: {path}")
                     break
-                except Exception:
+                except Exception as fallback_error:
+                    if not silent_mode:
+                        print(f"Failed to use {path}: {fallback_error}")
                     continue
         
         if driver is None:
-            raise Exception("ChromeDriver not found. Please install ChromeDriver and add it to your PATH, or ensure Docker environment is properly configured.")
-    
+            error_msg = "ChromeDriver not found. Please install ChromeDriver and add it to your PATH."
+            if not silent_mode:
+                print(f"ERROR: {error_msg}")
+            return {"error": error_msg}
+
     try:
         if not silent_mode:
             print(f"Loading page: {url}")
+        
+        # Set page load timeout
+        driver.set_page_load_timeout(30)
         driver.get(url)
         
-        wait = WebDriverWait(driver, 10)
-        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "albumBlock")))
+        # Wait for the page to load
+        wait = WebDriverWait(driver, 15)
+        
+        # Try to wait for album blocks
+        try:
+            wait.until(EC.presence_of_element_located((By.CLASS_NAME, "albumBlock")))
+        except TimeoutException:
+            # If albumBlock doesn't exist, try waiting for any content
+            try:
+                wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+                if not silent_mode:
+                    print("Page loaded but no albumBlock found - checking page content...")
+            except TimeoutException:
+                if not silent_mode:
+                    print("Page failed to load properly")
+                return {"error": "Page load timeout"}
         
         if not silent_mode:
             print("Scrolling to load all content...")
-        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         
-        import time
+        # Scroll to load content
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(2)
         
+        # Check for "View More" button
         try:
             view_more_button = driver.find_element(By.CSS_SELECTOR, ".largeButtonContainer .largeButton")
             if view_more_button.is_displayed() and not silent_mode:
                 print("Found 'View More' button - note: this links to a different page")
-                print("Current script will only get albums from this page")
         except NoSuchElementException:
             pass
         
+        # Find album blocks
         album_blocks = driver.find_elements(By.CLASS_NAME, "albumBlock")
         if not silent_mode:
             print(f"Found {len(album_blocks)} album blocks")
+        
+        if len(album_blocks) == 0:
+            # Debug: Check what's actually on the page
+            page_title = driver.title
+            page_source_sample = driver.page_source[:500] if driver.page_source else "No page source"
+            
+            if not silent_mode:
+                print(f"Page title: {page_title}")
+                print(f"Page source sample: {page_source_sample}")
+            
+            return {"error": "No album blocks found", "debug_info": {
+                "page_title": page_title,
+                "page_source_sample": page_source_sample
+            }}
         
         albums_data = []
         
@@ -144,6 +209,7 @@ def scrape_album_data(url, silent_mode=False):
                 except NoSuchElementException:
                     album_info['album_name'] = None
                 
+                # Extract type and release date
                 try:
                     type_element = block.find_element(By.CSS_SELECTOR, ".type")
                     type_text = type_element.text.strip()
@@ -176,6 +242,7 @@ def scrape_album_data(url, silent_mode=False):
                     except NoSuchElementException:
                         album_info['album_url'] = None
                 
+                # Only add if we have meaningful data
                 if album_info.get('album_name') or album_info.get('artist_name'):
                     albums_data.append(album_info)
                     if not silent_mode:
@@ -191,16 +258,23 @@ def scrape_album_data(url, silent_mode=False):
         
         return albums_data
         
-    except TimeoutException:
+    except TimeoutException as e:
+        error_msg = f"Timeout waiting for page to load: {str(e)}"
         if not silent_mode:
-            print("Timeout waiting for page to load")
-        return []
+            print(error_msg)
+        return {"error": error_msg}
     except Exception as e:
+        error_msg = f"An error occurred: {str(e)}"
         if not silent_mode:
-            print(f"An error occurred: {str(e)}")
-        return []
+            print(error_msg)
+        return {"error": error_msg}
     finally:
-        driver.quit()
+        if driver:
+            try:
+                driver.quit()
+            except Exception as e:
+                if not silent_mode:
+                    print(f"Error closing driver: {e}")
 
 def main():
     if len(sys.argv) > 1:
@@ -211,16 +285,22 @@ def main():
         url = "https://www.albumoftheyear.org/search/?q=time"
         print("Starting Album of the Year scraper...")
         albums = scrape_album_data(url, silent_mode=False)
-        with open('albums_data.json', 'w', encoding='utf-8') as f:
-            json.dump(albums, f, indent=2, ensure_ascii=False)
-        print(f"Data saved to albums_data.json")
+        
+        if isinstance(albums, dict) and 'error' in albums:
+            print(f"Error: {albums['error']}")
+            if 'debug_info' in albums:
+                print(f"Debug info: {albums['debug_info']}")
+        else:
+            with open('albums_data.json', 'w', encoding='utf-8') as f:
+                json.dump(albums, f, indent=2, ensure_ascii=False)
+            print(f"Data saved to albums_data.json")
 
-        if albums:
-            print(f"\nSample of scraped data:")
-            for i, album in enumerate(albums[:3]):
-                print(f"\nAlbum {i+1}:")
-                for key, value in album.items():
-                    print(f"  {key}: {value}")
+            if albums:
+                print(f"\nSample of scraped data:")
+                for i, album in enumerate(albums[:3]):
+                    print(f"\nAlbum {i+1}:")
+                    for key, value in album.items():
+                        print(f"  {key}: {value}")
 
 if __name__ == "__main__":
     main()

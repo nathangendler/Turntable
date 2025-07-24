@@ -138,14 +138,16 @@ app.post('/api/register', (req, res): void => {
 
   bcrypt.hash(password, saltRounds, (err: Error | undefined, hash: string) => {
     if (err) {
-      res.status(500).json({ error: 'Password hashing failed' });
+      console.error('Password hashing failed:', err);
+      res.status(500).json({ error: 'Password hashing failed', details: err.message });
       return;
     }
 
     const checkUserQuery = 'SELECT * FROM users WHERE username = ?';
     db.query<User[]>(checkUserQuery, [username], (err, results) => {
       if (err) {
-        res.status(500).json({ error: 'Database error' });
+        console.error('Database error (user check):', err);
+        res.status(500).json({ error: 'Database error', details: err.message });
         return;
       }
 
@@ -157,7 +159,8 @@ app.post('/api/register', (req, res): void => {
       const insertQuery = 'INSERT INTO users (username, password) VALUES (?, ?)';
       db.query<ResultSetHeader>(insertQuery, [username, hash], (insertErr) => {
         if (insertErr) {
-          res.status(500).json({ error: 'Failed to create user' });
+          console.error('Failed to create user:', insertErr);
+          res.status(500).json({ error: 'Failed to create user', details: insertErr.message });
           return;
         }
         res.status(200).json({ message: 'Registration successful' });
@@ -172,12 +175,18 @@ app.post('/api/login', (req, res): void => {
   
   db.query<User[]>(checkUserQuery, [username], (err, results) => {
     if (err) {
-      res.status(500).json({ error: 'Database error' });
+      console.error('Database error (login):', err);
+      res.status(500).json({ error: 'Database error', details: err.message });
       return;
     }
     
     if (results.length > 0) {
       bcrypt.compare(password, results[0].password, (error: Error | undefined, response: boolean) => {
+        if (error) {
+          console.error('Bcrypt compare error:', error);
+          res.status(500).json({ error: 'Password comparison failed', details: error.message });
+          return;
+        }
         if (response) {
           req.session.user = results[0];
           res.status(200).json({
@@ -363,23 +372,52 @@ app.post('/api/searchAlbum', (req: Request, res: Response): void => {
   }
 
   const searchURL = `https://www.albumoftheyear.org/search/?q=${encodeURIComponent(searchTerm)}`;
+  console.log(`Starting search for: ${searchTerm}`);
+  console.log(`Search URL: ${searchURL}`);
 
-  const python = spawn('python', [path.join(__dirname, 'scrape.py'), searchURL]);
+  const python = spawn('python', [path.join(__dirname, 'scrape_requests.py'), searchURL]);
 
   let output = '';
   let errorOutput = '';
+  let isResolved = false;
+
+  const timeout = setTimeout(() => {
+    if (!isResolved) {
+      isResolved = true;
+      console.log('Request timeout - killing Python process');
+      python.kill('SIGTERM');
+      res.status(408).json({ error: 'Request timeout after 45 seconds' });
+    }
+  }, 45000); // 45 second timeout
 
   python.stdout.on('data', (data: Buffer) => {
-    output += data.toString();
+    const chunk = data.toString();
+    output += chunk;
+    console.log(`Python stdout: ${chunk.substring(0, 200)}...`); 
   });
 
   python.stderr.on('data', (data: Buffer) => {
-    errorOutput += data.toString();
+    const chunk = data.toString();
+    errorOutput += chunk;
+    console.error(`Python stderr: ${chunk}`);
   });
 
   python.on('close', (code: number | null) => {
+    if (isResolved) return;
+    isResolved = true;
+    clearTimeout(timeout);
+
+    console.log(`Python process closed with code: ${code}`);
+    console.log(`Full output length: ${output.length}`);
+    console.log(`Full error output length: ${errorOutput.length}`);
+
     if (code !== 0) {
-      res.status(500).json({ error: 'Python script failed', details: errorOutput });
+      console.error('Python stderr:', errorOutput);
+      res.status(500).json({ 
+        error: 'Python script failed', 
+        details: errorOutput,
+        exit_code: code 
+      });
       return;
     }
 
@@ -395,15 +433,52 @@ app.post('/api/searchAlbum', (req: Request, res: Response): void => {
         }
       }
 
-      if (jsonLine) {
-        const parsed = JSON.parse(jsonLine);
-        res.json(parsed);
-      } else {
-        throw new Error('No JSON found in Python output');
+      if (!jsonLine) {
+        console.error('No JSON found in output. Full output:');
+        console.error(output);
+        res.status(500).json({ 
+          error: 'No JSON found in Python output',
+          raw_output: output.substring(0, 1000) 
+        });
+        return;
       }
+
+      console.log(`Found JSON line: ${jsonLine.substring(0, 100)}...`);
+      const parsed = JSON.parse(jsonLine);
+
+      if (typeof parsed === 'object' && parsed.error) {
+        console.error('Python script returned an error:', parsed.error);
+        res.status(500).json({ 
+          error: 'Scraping failed', 
+          details: parsed.error,
+          debug_info: parsed.debug_info || null
+        });
+        return;
+      }
+
+      console.log(`Successfully parsed ${Array.isArray(parsed) ? parsed.length : 'unknown'} albums`);
+      res.json(parsed);
+
     } catch (err) {
-      res.status(500).json({ error: 'Invalid JSON returned from Python' });
+      console.error('JSON parsing error:', err);
+      console.error('Raw output that failed to parse:');
+      console.error(output);
+      res.status(500).json({ 
+        error: 'Invalid JSON returned from Python',
+        raw_output: output.substring(0, 1000) 
+      });
     }
+  });
+
+  python.on('error', (err) => {
+    if (isResolved) return;
+    isResolved = true;
+    clearTimeout(timeout);
+    console.error('Python process error:', err);
+    res.status(500).json({ 
+      error: 'Failed to start Python process',
+      details: err.message 
+    });
   });
 });
 
