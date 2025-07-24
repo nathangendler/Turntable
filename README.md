@@ -1,12 +1,27 @@
-# React + Vite
+# TurnTable
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## A full-stack node.js social media app that allows users to rate albums and share their ratings with friends
 
-Currently, two official plugins are available:
+  Here are some of the features and technologies used to create Turntable:
+  - User registration and login made using Node.js, Express, and JWT authentication for secure account management
+  - Data scraping for album information made using Python and beautifulsoup scripts to fetch and update album metadata
+  - Infinite scroll pagination of trending albums and recent reviews made using React.js Intersection Observer API
+  - Album search and rating made using a RESTful API with Express and a MySQL database to store user ratings and album data
+  - Friend system (follow/unfollow users) made using relational database tables and REST endpoints to manage user connections
+  - Personalized user profiles made using React components and Tailwind CSS
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+  
 
-## Expanding the ESLint configuration
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## [Check out a quick demonstration of TurnTable](https://youtu.be/DZBQSPaR_i4)
+
+[![Watch the video](https://img.youtube.com/vi/DZBQSPaR_i4/maxresdefault.jpg)](https://youtu.be/DZBQSPaR_i4)
+
+
+## Future edits and improvement I want to make
+  - Adding changable profile pictures
+  - improving home page interface to dynamically visit other user pages
+  - Adding an ai that learns your music taste and recommends other albums
+  - music related articles on the homepage mixed in with reviews
+
+
