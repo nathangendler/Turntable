@@ -8,6 +8,8 @@ import time
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
+session = requests.Session()
+
 def scrape_album_data_requests(url, silent_mode=False):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -17,17 +19,16 @@ def scrape_album_data_requests(url, silent_mode=False):
         'Connection': 'keep-alive',
     }
     
+    session.headers.update(headers)
+    
     try:
         if not silent_mode:
             print(f"Fetching page: {url}")
         
-        response = requests.get(url, headers=headers, timeout=30)
+        response = session.get(url, timeout=30)
         response.raise_for_status()
-        
-        soup = BeautifulSoup(response.content, 'html.parser')
-        
-        # Find album blocks
-        album_blocks = soup.find_all(class_='albumBlock')
+        soup = BeautifulSoup(response.content, 'lxml')
+        album_blocks = soup.select('.albumBlock')
         
         if not silent_mode:
             print(f"Found {len(album_blocks)} album blocks")
@@ -46,22 +47,19 @@ def scrape_album_data_requests(url, silent_mode=False):
                 
                 album_info['image_url'] = None
                 try:
-                    image_div = block.find('div', class_='image')
-                    if image_div:
-                        img_element = image_div.find('img')
-                        if img_element:
-                            album_info['image_url'] = img_element.get('data-src') or img_element.get('src')
+                    img_element = block.select_one('div.image img')
+                    if not img_element:
+                        # Fallback to any img in block
+                        img_element = block.select_one('img')
                     
-                    if not album_info['image_url']:
-                        img_element = block.find('img')
-                        if img_element:
-                            album_info['image_url'] = img_element.get('data-src') or img_element.get('src')
+                    if img_element:
+                        album_info['image_url'] = img_element.get('data-src') or img_element.get('src')
                 except:
                     pass
 
                 album_info['artist_name'] = None
                 try:
-                    artist_element = block.find(class_='artistTitle')
+                    artist_element = block.select_one('.artistTitle')
                     if artist_element:
                         album_info['artist_name'] = artist_element.get_text(strip=True)
                 except:
@@ -69,16 +67,19 @@ def scrape_album_data_requests(url, silent_mode=False):
                 
                 album_info['album_name'] = None
                 try:
-                    album_element = block.find(class_='albumTitle')
+                    album_element = block.select_one('.albumTitle')
                     if album_element:
                         album_info['album_name'] = album_element.get_text(strip=True)
                 except:
                     pass
                 
+                if not (album_info.get('artist_name') or album_info.get('album_name')):
+                    continue
+                
                 album_info['release_date'] = None
                 album_info['record_type'] = None
                 try:
-                    type_element = block.find(class_='type')
+                    type_element = block.select_one('.type')
                     if type_element:
                         type_text = type_element.get_text(strip=True)
                         
@@ -93,24 +94,22 @@ def scrape_album_data_requests(url, silent_mode=False):
                             album_info['record_type'] = type_text
                 except:
                     pass
-                
                 album_info['album_url'] = None
                 try:
-                    album_link = block.find(class_='albumTitle')
-                    if album_link:
-                        link_tag = album_link.find('a')
-                        if not link_tag:
-                            link_tag = album_link.find_parent('a')
-                        
-                        if link_tag:
-                            album_info['album_url'] = link_tag.get('href')
+                    link_tag = block.select_one('.albumTitle a')
+                    if not link_tag:
+                        album_title = block.select_one('.albumTitle')
+                        if album_title:
+                            link_tag = album_title.find_parent('a')
+                    
+                    if link_tag:
+                        album_info['album_url'] = link_tag.get('href')
                 except:
                     pass
                 
-                if album_info.get('album_name') or album_info.get('artist_name'):
-                    albums_data.append(album_info)
-                    if not silent_mode:
-                        print(f"Extracted album {i+1}: {album_info.get('artist_name', 'Unknown')} - {album_info.get('album_name', 'Unknown')}")
+                albums_data.append(album_info)
+                if not silent_mode:
+                    print(f"Extracted album {i+1}: {album_info.get('artist_name', 'Unknown')} - {album_info.get('album_name', 'Unknown')}")
                 
             except Exception as e:
                 if not silent_mode:
@@ -143,7 +142,6 @@ def main():
             print(json.dumps(albums, ensure_ascii=True))
     else:
         url = "https://www.albumoftheyear.org/search/?q=time"
-        print("Starting Album of the Year scraper (requests version)...")
         albums = scrape_album_data_requests(url, silent_mode=False)
         
         if isinstance(albums, dict) and 'error' in albums:
@@ -157,6 +155,7 @@ def main():
                 with open('albums_data.json', 'w', encoding='utf-8') as f:
                     json.dump(albums, f, indent=2, ensure_ascii=True)
                 print(f"Data saved to albums_data.json (ASCII fallback)")
+    session.close()
 
 if __name__ == "__main__":
     main()
