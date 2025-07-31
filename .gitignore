@@ -34,3 +34,6 @@ dist-ssr
 */.env.development  
 */.env.production
 */.env.save
+
+# SSH Keys
+*.pem
