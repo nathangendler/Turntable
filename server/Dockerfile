@@ -10,7 +10,7 @@ RUN apk add --no-cache \
     curl
 
 # Install Python dependencies for Selenium
-RUN pip3 install --break-system-packages selenium
+RUN pip3 install --break-system-packages selenium requests beautifulsoup4 lxml
 
 WORKDIR /app
 
